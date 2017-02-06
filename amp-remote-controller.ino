@@ -1,4 +1,3 @@
-#include <math.h>
 #include <IRremote.h>
 
 const int VOL_UP = 1;
@@ -15,8 +14,7 @@ int lastDirection = 0;
 IRrecv irrecv(RECV_PIN, LED_PIN);
 decode_results results;
 
-void setup()
-{
+void setup() {
   #ifndef __AVR_ATtiny85__
     Serial.begin(9600);
   #endif
@@ -77,7 +75,6 @@ void loop() {
   }
 }
 
-
 void startMotor(int direction) {
   if (direction == VOL_UP) {
     digitalWrite(MOTOR_1_PIN, LOW);
@@ -94,11 +91,10 @@ void stopMotor() {
 }
 
 unsigned long getMilisceconds() {
-       
-    return milliseconds;
+  return milliseconds;
 }
 
 ISR(TIMER1_COMPA_vect) {
-    milliseconds++;
+  milliseconds++;
 }
 
