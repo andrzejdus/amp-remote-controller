@@ -11,7 +11,11 @@ volatile unsigned long milliseconds;
 unsigned long lastReceived = 0;
 int lastDirection = 0;
 
-IRrecv irrecv(RECV_PIN, LED_PIN);
+bool isBlinking = false;
+bool isLedOn = true;
+unsigned long lastBlink = 0; 
+
+IRrecv irrecv(RECV_PIN);
 decode_results results;
 
 void setup() {
@@ -21,12 +25,14 @@ void setup() {
 
   pinMode(MOTOR_0_PIN, OUTPUT);
   pinMode(MOTOR_1_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
+
+  stopBlinking();
   
-  lastReceived = getMilisceconds();
+  lastReceived = getMiliseconds();
   stopMotor();
   
   irrecv.enableIRIn(); // Start the receiver
-  irrecv.blink13(1);
   
   TCCR1 = (1<<CTC1)|(7<<CS10);   // CTC  mode, div64
   OCR1C = 0.001 * F_CPU/32 - 1;  // 1ms, F_CPU @16MHz, div64
@@ -36,13 +42,16 @@ void setup() {
 }
 
 void loop() {
-  if (getMilisceconds() - lastReceived > 60) {
+  if (getMiliseconds() - lastReceived > 70) {
     #ifndef __AVR_ATtiny85__
-      Serial.println(getMilisceconds() - lastReceived);
+      Serial.println(getMiliseconds() - lastReceived);
     #endif
 
     stopMotor();
+    stopBlinking();
   }
+
+  updateBlinking();
 
   if (irrecv.decode(&results)) {
     #ifndef __AVR_ATtiny85__
@@ -52,19 +61,20 @@ void loop() {
     switch (results.value) {
       case 0x2FDB04F:
         lastDirection = VOL_UP;
-        lastReceived = getMilisceconds();
+        lastReceived = getMiliseconds();
         startMotor(lastDirection);
+        startBlinking();
 
         break;
       case 0x2FDA857:
         lastDirection = VOL_DOWN;
-        lastReceived = getMilisceconds();
+        lastReceived = getMiliseconds();
         startMotor(lastDirection);
+        startBlinking();
         
         break;
       case 0xFFFFFFFF:
-        lastReceived = getMilisceconds();
-        startMotor(lastDirection);
+        lastReceived = getMiliseconds();
 
         break;
       default:
@@ -90,7 +100,30 @@ void stopMotor() {
   digitalWrite(MOTOR_1_PIN, LOW);  
 }
 
-unsigned long getMilisceconds() {
+
+void startBlinking() {
+  isBlinking = true;
+  isLedOn = true;
+  digitalWrite(LED_PIN, HIGH);
+  lastBlink = getMiliseconds();
+}
+
+void stopBlinking() {
+  isBlinking = false;
+  isLedOn = true;
+  digitalWrite(LED_PIN, HIGH);
+}
+
+void updateBlinking() {
+  unsigned long currentMiliseconds = getMiliseconds();
+  if (isBlinking && currentMiliseconds - lastBlink > 50) {
+    digitalWrite(LED_PIN, isLedOn ? LOW : HIGH);
+    isLedOn = !isLedOn;
+    lastBlink = currentMiliseconds;
+  }  
+}
+
+unsigned long getMiliseconds() {
   return milliseconds;
 }
 
